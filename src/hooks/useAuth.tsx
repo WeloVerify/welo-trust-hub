@@ -59,7 +59,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (!session) setLoading(false);
+
+      // Ensure the UI does not remain stuck in a loading state if the
+      // auth state change event doesn't fire for an existing session.
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
