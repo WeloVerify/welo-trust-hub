@@ -13,6 +13,7 @@ import Verification from "./pages/Verification";
 import Statistics from "./pages/Statistics";
 import Onboarding from "./pages/Onboarding";
 import Admin from "./pages/Admin";
+import AdminAnalytics from "./pages/AdminAnalytics";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -37,6 +38,15 @@ const App = () => (
                   <Sidebar userRole="admin" />
                   <main className="flex-1 overflow-auto">
                     <Admin />
+                  </main>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/admin/analytics" element={
+                <ProtectedRoute requireRole="admin">
+                  <Sidebar userRole="admin" />
+                  <main className="flex-1 overflow-auto">
+                    <AdminAnalytics />
                   </main>
                 </ProtectedRoute>
               } />
