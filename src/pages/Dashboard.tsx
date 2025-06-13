@@ -28,7 +28,13 @@ const chartData = [
 ];
 
 const Dashboard = () => {
-  const { isApproved, hasScriptInstalled, scriptStatus, loading } = useCompanyStatus();
+  const {
+    isApproved,
+    onboardingCompleted,
+    hasScriptInstalled,
+    scriptStatus,
+    loading,
+  } = useCompanyStatus();
   const navigate = useNavigate();
 
   const getScriptStatusBadge = () => {
@@ -93,26 +99,26 @@ const Dashboard = () => {
                 <AlertTriangle className="h-5 w-5 text-yellow-600" />
                 <div>
                   <p className="text-sm font-medium text-yellow-800">
-                    Company approval pending
+                    Complete your onboarding
                   </p>
                   <p className="text-xs text-yellow-700">
-                    Your company is under review. You'll receive full access once approved.
+                    Setup your badge, company info, and customize your public page.
                   </p>
                 </div>
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
-                onClick={() => navigate('/verification')}
+                onClick={() => navigate('/onboarding')}
               >
-                Check Status
+                Go to Onboarding
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {isApproved && !hasScriptInstalled && (
+      {isApproved && onboardingCompleted && !hasScriptInstalled && (
         <Card className="border-orange-200 bg-orange-50">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -120,17 +126,17 @@ const Dashboard = () => {
                 <Code className="h-5 w-5 text-orange-600" />
                 <div>
                   <p className="text-sm font-medium text-orange-800">
-                    Install your tracking script to start collecting data
+                    Install your tracking script
                   </p>
                   <p className="text-xs text-orange-700">
                     Get your tracking script and start monitoring badge performance.
                   </p>
                 </div>
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
-                onClick={() => navigate('/widgets')}
+                onClick={() => navigate('/dashboard/widgets')}
               >
                 Get Script
               </Button>
