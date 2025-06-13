@@ -71,3 +71,13 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Linting
+
+Run ESLint to check code quality using:
+
+```sh
+npm run lint
+```
+
+If you see an error like `Cannot find package '@eslint/js'` when running the command, make sure you've installed the project dependencies first using `npm install`.

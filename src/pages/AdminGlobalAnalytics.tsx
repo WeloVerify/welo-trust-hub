@@ -28,9 +28,36 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
+interface PlanBreakdownEntry {
+  name: string;
+  value: number;
+  color: string;
+}
+
+interface CountryBreakdownEntry {
+  country: string;
+  companies: number;
+}
+
+interface ActivityEntry {
+  date: string;
+  views: number;
+}
+
+interface AnalyticsState {
+  totalCompanies: number;
+  activeCompanies: number;
+  totalViews: number;
+  averageViewsPerCompany: number;
+  planBreakdown: PlanBreakdownEntry[];
+  countryBreakdown: CountryBreakdownEntry[];
+  activityData: ActivityEntry[];
+  clickThroughRate: number;
+}
+
 const AdminGlobalAnalytics = () => {
   const [timeFilter, setTimeFilter] = useState<'7' | '30' | '90' | 'all'>('30');
-  const [analytics, setAnalytics] = useState({
+  const [analytics, setAnalytics] = useState<AnalyticsState>({
     totalCompanies: 0,
     activeCompanies: 0,
     totalViews: 0,
@@ -38,7 +65,7 @@ const AdminGlobalAnalytics = () => {
     planBreakdown: [],
     countryBreakdown: [],
     activityData: [],
-    clickThroughRate: 0
+    clickThroughRate: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -80,14 +107,14 @@ const AdminGlobalAnalytics = () => {
       const averageViewsPerCompany = totalCompanies > 0 ? Math.round(totalViews / totalCompanies) : 0;
 
       // Plan breakdown
-      const planCounts = companies?.reduce((acc: any, company) => {
+      const planCounts = companies?.reduce<Record<string, number>>((acc, company) => {
         const plan = company.plan_type || 'starter';
         acc[plan] = (acc[plan] || 0) + 1;
         return acc;
       }, {});
 
       const planBreakdown = Object.entries(planCounts || {})
-        .map(([name, value]: any) => ({
+        .map(([name, value]) => ({
           name: name.charAt(0).toUpperCase() + name.slice(1),
           value,
           color: {
@@ -100,15 +127,15 @@ const AdminGlobalAnalytics = () => {
         }));
 
       // Country breakdown
-      const countryCounts = companies?.reduce((acc: any, company) => {
+      const countryCounts = companies?.reduce<Record<string, number>>((acc, company) => {
         const country = company.country || 'Unknown';
         acc[country] = (acc[country] || 0) + 1;
         return acc;
       }, {});
 
       const countryBreakdown = Object.entries(countryCounts || {})
-        .map(([country, companies]: any) => ({ country, companies }))
-        .sort((a: any, b: any) => b.companies - a.companies)
+        .map(([country, companies]) => ({ country, companies }))
+        .sort((a, b) => b.companies - a.companies)
         .slice(0, 5);
 
       // Activity data for the last 7 days
@@ -267,7 +294,7 @@ const AdminGlobalAnalytics = () => {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {analytics.planBreakdown.map((entry: any, index) => (
+                  {analytics.planBreakdown.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>

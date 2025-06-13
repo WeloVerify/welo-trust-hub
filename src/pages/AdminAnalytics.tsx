@@ -27,15 +27,40 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
+interface PlanBreakdownEntry {
+  name: string;
+  value: number;
+  color: string;
+}
+
+interface CountryBreakdownEntry {
+  country: string;
+  companies: number;
+}
+
+interface ActivityEntry {
+  date: string;
+  views: number;
+}
+
+interface AnalyticsState {
+  totalCompanies: number;
+  activeCompanies: number;
+  totalViews: number;
+  planBreakdown: PlanBreakdownEntry[];
+  countryBreakdown: CountryBreakdownEntry[];
+  activityData: ActivityEntry[];
+}
+
 const AdminAnalytics = () => {
   const [timeFilter, setTimeFilter] = useState<'7' | '30' | '90'>('30');
-  const [analytics, setAnalytics] = useState({
+  const [analytics, setAnalytics] = useState<AnalyticsState>({
     totalCompanies: 0,
     activeCompanies: 0,
     totalViews: 0,
     planBreakdown: [],
     countryBreakdown: [],
-    activityData: []
+    activityData: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -79,7 +104,7 @@ const AdminAnalytics = () => {
       ];
 
       // Country breakdown
-      const countryCounts = companies?.reduce((acc: any, company) => {
+      const countryCounts = companies?.reduce<Record<string, number>>((acc, company) => {
         const country = company.country || 'Unknown';
         acc[country] = (acc[country] || 0) + 1;
         return acc;
@@ -87,7 +112,7 @@ const AdminAnalytics = () => {
 
       const countryBreakdown = Object.entries(countryCounts || {})
         .map(([country, count]) => ({ country, companies: count }))
-        .sort((a: any, b: any) => b.companies - a.companies)
+        .sort((a, b) => b.companies - a.companies)
         .slice(0, 5);
 
       // Activity data for the last 7 days
@@ -243,7 +268,7 @@ const AdminAnalytics = () => {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {analytics.planBreakdown.map((entry: any, index) => (
+                  {analytics.planBreakdown.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
