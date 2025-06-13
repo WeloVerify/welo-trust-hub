@@ -77,10 +77,13 @@ export type Database = {
           description: string | null
           email: string
           id: string
+          last_tracking_event: string | null
           phone_number: string | null
           plan_type: string | null
           privacy_url: string | null
           rejection_reason: string | null
+          script_installed: boolean | null
+          script_verification_status: string | null
           status: Database["public"]["Enums"]["company_status"]
           terms_url: string | null
           tracking_id: string | null
@@ -97,10 +100,13 @@ export type Database = {
           description?: string | null
           email: string
           id?: string
+          last_tracking_event?: string | null
           phone_number?: string | null
           plan_type?: string | null
           privacy_url?: string | null
           rejection_reason?: string | null
+          script_installed?: boolean | null
+          script_verification_status?: string | null
           status?: Database["public"]["Enums"]["company_status"]
           terms_url?: string | null
           tracking_id?: string | null
@@ -117,10 +123,13 @@ export type Database = {
           description?: string | null
           email?: string
           id?: string
+          last_tracking_event?: string | null
           phone_number?: string | null
           plan_type?: string | null
           privacy_url?: string | null
           rejection_reason?: string | null
+          script_installed?: boolean | null
+          script_verification_status?: string | null
           status?: Database["public"]["Enums"]["company_status"]
           terms_url?: string | null
           tracking_id?: string | null
@@ -359,6 +368,50 @@ export type Database = {
           },
         ]
       }
+      tracking_script_events: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          device_info: Json | null
+          event_data: Json
+          id: string
+          ip_hash: string | null
+          page_url: string
+          referrer: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          device_info?: Json | null
+          event_data: Json
+          id?: string
+          ip_hash?: string | null
+          page_url: string
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          device_info?: Json | null
+          event_data?: Json
+          id?: string
+          ip_hash?: string | null
+          page_url?: string
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_script_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -367,6 +420,20 @@ export type Database = {
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      process_tracking_event: {
+        Args: {
+          tracking_id_param: string
+          page_url_param: string
+          referrer_param?: string
+          user_agent_param?: string
+          ip_address_param?: unknown
+        }
+        Returns: Json
+      }
+      verify_script_installation: {
+        Args: { company_tracking_id: string }
+        Returns: boolean
       }
     }
     Enums: {
