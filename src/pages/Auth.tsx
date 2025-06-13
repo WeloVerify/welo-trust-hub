@@ -27,11 +27,12 @@ const Auth = () => {
 
   // Redirect after successful login based on role
   useEffect(() => {
-    if (!authLoading && user && userRole) {
-      if (userRole === "admin") navigate("/admin", { replace: true });
-      else navigate("/dashboard", { replace: true });
-    }
-  }, [authLoading, user, userRole, navigate]);
+  if (!authLoading && user && userRole) {
+    if (userRole === "admin") navigate("/admin", { replace: true });
+    else navigate("/dashboard", { replace: true });
+  }
+}, [authLoading, user, userRole, navigate]);
+
 
   // Loader se user è pronto ma ruolo non ancora caricato
   if (user && !userRole) {
