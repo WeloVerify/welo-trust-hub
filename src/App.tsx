@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +6,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
+import AdminSidebar from "./components/AdminSidebar";
+import AdminGlobalAnalytics from "./pages/AdminGlobalAnalytics";
+import AdminUpdates from "./pages/AdminUpdates";
+import AdminAffiliates from "./pages/AdminAffiliates";
+import AdminChat from "./pages/AdminChat";
+import AdminSettings from "./pages/AdminSettings";
 import Dashboard from "./pages/Dashboard";
 import Widgets from "./pages/Widgets";
 import Verification from "./pages/Verification";
@@ -35,18 +40,54 @@ const App = () => (
               {/* Admin routes */}
               <Route path="/admin" element={
                 <ProtectedRoute requireRole="admin">
-                  <Sidebar userRole="admin" />
+                  <AdminSidebar />
                   <main className="flex-1 overflow-auto">
                     <Admin />
                   </main>
                 </ProtectedRoute>
               } />
               
-              <Route path="/admin/analytics" element={
+              <Route path="/admin/global-analytics" element={
                 <ProtectedRoute requireRole="admin">
-                  <Sidebar userRole="admin" />
+                  <AdminSidebar />
                   <main className="flex-1 overflow-auto">
-                    <AdminAnalytics />
+                    <AdminGlobalAnalytics />
+                  </main>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/admin/updates" element={
+                <ProtectedRoute requireRole="admin">
+                  <AdminSidebar />
+                  <main className="flex-1 overflow-auto">
+                    <AdminUpdates />
+                  </main>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/admin/affiliates" element={
+                <ProtectedRoute requireRole="admin">
+                  <AdminSidebar />
+                  <main className="flex-1 overflow-auto">
+                    <AdminAffiliates />
+                  </main>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/admin/chat" element={
+                <ProtectedRoute requireRole="admin">
+                  <AdminSidebar />
+                  <main className="flex-1 overflow-auto">
+                    <AdminChat />
+                  </main>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/admin/settings" element={
+                <ProtectedRoute requireRole="admin">
+                  <AdminSidebar />
+                  <main className="flex-1 overflow-auto">
+                    <AdminSettings />
                   </main>
                 </ProtectedRoute>
               } />

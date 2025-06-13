@@ -11,7 +11,8 @@ import {
   Clock, 
   Building2,
   Mail,
-  ExternalLink
+  ExternalLink,
+  Copy
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -27,6 +28,9 @@ interface CompanyProfile {
   status: 'pending' | 'under_review' | 'approved' | 'rejected';
   rejection_reason: string | null;
   tracking_id: string | null;
+  country: string;
+  plan_type: string | null;
+  views_count: number | null;
 }
 
 const Admin = () => {
@@ -67,7 +71,16 @@ const Admin = () => {
   };
 
   const generateWeloPageUrl = (trackingId: string) => {
-    return `https://welobadge.com/company/${trackingId}`;
+    return `https://welobadge.com/welo-page/${trackingId}`;
+  };
+
+  const generateTrackingId = () => {
+    return 'welo_' + Math.random().toString(36).substr(2, 12);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('URL copied to clipboard!');
   };
 
   const handleConfirmAction = async (reason?: string) => {
@@ -75,28 +88,48 @@ const Admin = () => {
 
     setConfirmLoading(true);
     try {
-      let newStatus: 'approved' | 'rejected' = actionType === 'approve' ? 'approved' : 'rejected';
+      let updateData: any = {};
+
+      if (actionType === 'approve') {
+        const trackingId = selectedCompany.tracking_id || generateTrackingId();
+        updateData = { 
+          status: 'approved',
+          tracking_id: trackingId,
+          rejection_reason: null
+        };
+      } else {
+        updateData = { 
+          status: 'rejected',
+          rejection_reason: reason || null
+        };
+      }
 
       const { error } = await supabase
         .from('companies')
-        .update({ 
-          status: newStatus,
-          rejection_reason: reason || null
-        })
+        .update(updateData)
         .eq('id', selectedCompany.id);
 
       if (error) {
-        console.error(`Error ${actionType === 'approve' ? 'approving' : 'rejecting'} company:`, error);
-        toast.error(`Failed to ${actionType === 'approve' ? 'approve' : 'reject'} company. Please try again.`);
+        console.error(`Error ${actionType} company:`, error);
+        toast.error(`Failed to ${actionType} company. Please try again.`);
       } else {
-        if (actionType === 'approve' && selectedCompany.tracking_id) {
-          const weloUrl = generateWeloPageUrl(selectedCompany.tracking_id);
+        if (actionType === 'approve') {
+          const weloUrl = generateWeloPageUrl(updateData.tracking_id);
           toast.success(
-            `Company approved successfully! Welo page: ${weloUrl}`,
-            { duration: 10000 }
+            `Company approved successfully! Welo page created.`,
+            { duration: 5000 }
           );
+          setTimeout(() => {
+            toast.success(`Welo URL: ${weloUrl}`, { 
+              duration: 10000,
+              action: {
+                label: "Copy",
+                onClick: () => copyToClipboard(weloUrl)
+              }
+            });
+          }, 1000);
         } else {
-          toast.success(`Company ${actionType === 'approve' ? 'approved' : 'rejected'} successfully!`);
+          toast.success('Company rejected successfully!');
         }
         fetchCompanies(); // Refresh the company list
       }
@@ -107,13 +140,82 @@ const Admin = () => {
     }
   };
 
+  const getStatusStats = () => {
+    const stats = companies.reduce((acc, company) => {
+      acc[company.status] = (acc[company.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return {
+      total: companies.length,
+      pending: stats.pending || 0,
+      approved: stats.approved || 0,
+      rejected: stats.rejected || 0
+    };
+  };
+
+  const stats = getStatusStats();
+
   return (
     <div className="container mx-auto py-10">
-      <h1 className="text-3xl font-semibold mb-6">Admin Dashboard</h1>
+      <div className="mb-8">
+        <h1 className="text-3xl font-semibold mb-4">Company Management</h1>
+        
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Companies</p>
+                  <p className="text-2xl font-bold">{stats.total}</p>
+                </div>
+                <Building2 className="h-8 w-8 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Pending</p>
+                  <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+                </div>
+                <Clock className="h-8 w-8 text-yellow-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Approved</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
+                </div>
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Rejected</p>
+                  <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
+                </div>
+                <XCircle className="h-8 w-8 text-red-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -142,8 +244,16 @@ const Admin = () => {
                     <p className="text-sm flex items-center space-x-2"><Building2 className="h-4 w-4"/><span>{company.website_url}</span></p>
                   </div>
                   <div>
-                    <Label className="text-xs font-medium text-gray-700">Phone</Label>
-                    <p className="text-sm">{company.phone_number || 'N/A'}</p>
+                    <Label className="text-xs font-medium text-gray-700">Country</Label>
+                    <p className="text-sm">{company.country}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-gray-700">Plan</Label>
+                    <p className="text-sm capitalize">{company.plan_type || 'starter'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-gray-700">Views</Label>
+                    <p className="text-sm">{company.views_count || 0}</p>
                   </div>
                   <div>
                     <Label className="text-xs font-medium text-gray-700">Registered</Label>
@@ -152,15 +262,25 @@ const Admin = () => {
                   {company.status === 'approved' && company.tracking_id && (
                     <div>
                       <Label className="text-xs font-medium text-green-700">Welo Page</Label>
-                      <a 
-                        href={generateWeloPageUrl(company.tracking_id)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center space-x-1"
-                      >
-                        <span>{generateWeloPageUrl(company.tracking_id)}</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
+                      <div className="flex items-center space-x-2">
+                        <a 
+                          href={generateWeloPageUrl(company.tracking_id)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center space-x-1 truncate"
+                        >
+                          <span className="truncate">{generateWeloPageUrl(company.tracking_id)}</span>
+                          <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                        </a>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyToClipboard(generateWeloPageUrl(company.tracking_id!))}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   )}
                   {company.status === 'rejected' && company.rejection_reason && (

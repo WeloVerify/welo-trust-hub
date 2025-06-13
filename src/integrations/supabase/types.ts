@@ -44,6 +44,30 @@ export type Database = {
           },
         ]
       }
+      admin_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          setting_key: string
+          setting_value: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          setting_key: string
+          setting_value?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           company_name: string
@@ -54,6 +78,7 @@ export type Database = {
           email: string
           id: string
           phone_number: string | null
+          plan_type: string | null
           privacy_url: string | null
           rejection_reason: string | null
           status: Database["public"]["Enums"]["company_status"]
@@ -61,6 +86,7 @@ export type Database = {
           tracking_id: string | null
           updated_at: string
           user_id: string
+          views_count: number | null
           website_url: string
         }
         Insert: {
@@ -72,6 +98,7 @@ export type Database = {
           email: string
           id?: string
           phone_number?: string | null
+          plan_type?: string | null
           privacy_url?: string | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["company_status"]
@@ -79,6 +106,7 @@ export type Database = {
           tracking_id?: string | null
           updated_at?: string
           user_id: string
+          views_count?: number | null
           website_url: string
         }
         Update: {
@@ -90,6 +118,7 @@ export type Database = {
           email?: string
           id?: string
           phone_number?: string | null
+          plan_type?: string | null
           privacy_url?: string | null
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["company_status"]
@@ -97,6 +126,7 @@ export type Database = {
           tracking_id?: string | null
           updated_at?: string
           user_id?: string
+          views_count?: number | null
           website_url?: string
         }
         Relationships: []
