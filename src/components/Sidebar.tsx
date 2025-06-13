@@ -20,12 +20,12 @@ const Sidebar = ({ userRole = 'client' }: SidebarProps) => {
   const location = useLocation();
 
   const clientNavItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
-    { icon: Palette, label: 'Widgets', href: '/widgets' },
-    { icon: Shield, label: 'Verification', href: '/verification' },
-    { icon: CreditCard, label: 'Billing', href: '/billing' },
-    { icon: Users, label: 'Affiliates', href: '/affiliates' },
-    { icon: Settings, label: 'Settings', href: '/settings' },
+    { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+    { icon: Palette, label: 'Widgets', href: '/dashboard/widgets' },
+    { icon: Shield, label: 'Verification', href: '/dashboard/verification' },
+    { icon: CreditCard, label: 'Billing', href: '/dashboard/billing' },
+    { icon: Users, label: 'Affiliates', href: '/dashboard/affiliates' },
+    { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
   ];
 
   const adminNavItems = [
