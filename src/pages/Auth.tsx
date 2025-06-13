@@ -25,13 +25,13 @@ const Auth = () => {
 
   const navigate = useNavigate();
 
-  // Redirect automatico in base al ruolo
+  // Redirect after successful login based on role
   useEffect(() => {
-    if (!authLoading && user) {
-      if (userRole === "admin") navigate("/admin");
-      else navigate("/");
+    if (!authLoading && user && userRole) {
+      if (userRole === "admin") navigate("/admin", { replace: true });
+      else navigate("/dashboard", { replace: true });
     }
-  }, [user, userRole, authLoading, navigate]);
+  }, [authLoading, user, userRole, navigate]);
 
   // Loader se user è pronto ma ruolo non ancora caricato
   if (user && !userRole) {
