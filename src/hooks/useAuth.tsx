@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +11,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,44 +23,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
-          // Fetch user role after state is set
-          setTimeout(async () => {
+          // ✅ Hardcoded admin logic
+          if (session.user.email === "danielltaddei@gmail.com") {
+            setUserRole("admin");
+          } else {
+            // Optional: fallback per altri ruoli
             try {
               const { data: profile } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', session.user.id)
+                .from("profiles")
+                .select("role")
+                .eq("id", session.user.id)
                 .single();
-              
-              setUserRole(profile?.role ?? 'company');
+
+              setUserRole(profile?.role ?? "company");
             } catch (error) {
-              console.error('Error fetching user role:', error);
-              setUserRole('company');
+              console.error("Error fetching user role:", error);
+              setUserRole("company");
             }
-          }, 0);
+          }
         } else {
           setUserRole(null);
         }
-        
+
         setLoading(false);
       }
     );
 
-    // Check for existing session
+    // Recupera sessione attiva se presente
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (!session) {
-        setLoading(false);
-      }
+      if (!session) setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -68,7 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -76,29 +75,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         emailRedirectTo: redirectUrl
       }
     });
-    
+
     if (error) {
       toast.error(error.message);
     } else {
       toast.success('Registration successful! Please check your email to verify your account.');
     }
-    
+
     return { error };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
     if (error) {
       toast.error(error.message);
     } else {
       toast.success('Welcome back!');
     }
-    
+
     return { error };
+  };
+
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`
+      },
+    });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Redirecting to Google login...');
+    }
   };
 
   const signOut = async () => {
@@ -119,6 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signUp,
       signIn,
       signOut,
+      signInWithGoogle,
     }}>
       {children}
     </AuthContext.Provider>

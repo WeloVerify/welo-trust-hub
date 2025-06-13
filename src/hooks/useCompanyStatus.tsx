@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -7,6 +6,7 @@ interface CompanyStatus {
   isApproved: boolean;
   hasScriptInstalled: boolean;
   scriptStatus: string;
+  onboardingCompleted: boolean;
   loading: boolean;
 }
 
@@ -15,8 +15,10 @@ export const useCompanyStatus = (): CompanyStatus => {
     isApproved: false,
     hasScriptInstalled: false,
     scriptStatus: 'pending',
-    loading: true
+    onboardingCompleted: false,
+    loading: true,
   });
+
   const { user } = useAuth();
 
   useEffect(() => {
@@ -29,7 +31,7 @@ export const useCompanyStatus = (): CompanyStatus => {
       try {
         const { data, error } = await supabase
           .from('companies')
-          .select('status, script_installed, script_verification_status')
+          .select('status, script_installed, script_verification_status, onboarding_completed')
           .eq('user_id', user.id)
           .single();
 
@@ -39,7 +41,8 @@ export const useCompanyStatus = (): CompanyStatus => {
           isApproved: data.status === 'approved',
           hasScriptInstalled: data.script_installed || false,
           scriptStatus: data.script_verification_status || 'pending',
-          loading: false
+          onboardingCompleted: data.onboarding_completed || false,
+          loading: false,
         });
       } catch (error) {
         console.error('Error fetching company status:', error);
