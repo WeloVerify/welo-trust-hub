@@ -88,19 +88,25 @@ const Admin = () => {
 
     setConfirmLoading(true);
     try {
-      let updateData: any = {};
+      let updateData: {
+        status: CompanyProfile['status'];
+        tracking_id?: string;
+        rejection_reason?: string | null;
+      } = {
+        status: selectedCompany.status,
+      };
 
       if (actionType === 'approve') {
         const trackingId = selectedCompany.tracking_id || generateTrackingId();
-        updateData = { 
+        updateData = {
           status: 'approved',
           tracking_id: trackingId,
-          rejection_reason: null
+          rejection_reason: null,
         };
       } else {
-        updateData = { 
+        updateData = {
           status: 'rejected',
-          rejection_reason: reason || null
+          rejection_reason: reason || null,
         };
       }
 

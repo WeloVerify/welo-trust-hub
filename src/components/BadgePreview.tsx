@@ -74,7 +74,9 @@ const BadgePreview = () => {
                       name="style"
                       value={style}
                       checked={config.style === style}
-                      onChange={(e) => setConfig({...config, style: e.target.value as any})}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setConfig({ ...config, style: e.target.value as BadgeConfig["style"] })
+                      }
                       className="text-blue-600"
                     />
                     <span className="text-sm capitalize">{style}</span>
@@ -94,7 +96,9 @@ const BadgePreview = () => {
                       name="color"
                       value={color}
                       checked={config.color === color}
-                      onChange={(e) => setConfig({...config, color: e.target.value as any})}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setConfig({ ...config, color: e.target.value as BadgeConfig["color"] })
+                      }
                       className="text-blue-600"
                     />
                     <span className="text-sm capitalize">{color}</span>
@@ -114,7 +118,9 @@ const BadgePreview = () => {
                       name="size"
                       value={size}
                       checked={config.size === size}
-                      onChange={(e) => setConfig({...config, size: e.target.value as any})}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setConfig({ ...config, size: e.target.value as BadgeConfig["size"] })
+                      }
                       className="text-blue-600"
                     />
                     <span className="text-sm capitalize">{size}</span>
@@ -140,7 +146,9 @@ const BadgePreview = () => {
                         name="position"
                         value={pos.value}
                         checked={config.position === pos.value}
-                        onChange={(e) => setConfig({...config, position: e.target.value as any})}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setConfig({ ...config, position: e.target.value as BadgeConfig["position"] })
+                        }
                         className="text-blue-600"
                       />
                       <span className="text-xs">{pos.label}</span>
