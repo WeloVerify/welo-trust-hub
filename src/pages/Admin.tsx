@@ -10,11 +10,12 @@ import {
   XCircle, 
   Clock, 
   Building2,
-  Mail
+  Mail,
+  ExternalLink
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
-import AdminConfirmDialog from '@/components/AdminConfirmDialog';
+import AdminApprovalDialog from '@/components/AdminApprovalDialog';
 
 interface CompanyProfile {
   id: string;
@@ -25,6 +26,7 @@ interface CompanyProfile {
   created_at: string;
   status: 'pending' | 'under_review' | 'approved' | 'rejected';
   rejection_reason: string | null;
+  tracking_id: string | null;
 }
 
 const Admin = () => {
@@ -64,6 +66,10 @@ const Admin = () => {
     setConfirmDialogOpen(true);
   };
 
+  const generateWeloPageUrl = (trackingId: string) => {
+    return `https://welobadge.com/company/${trackingId}`;
+  };
+
   const handleConfirmAction = async (reason?: string) => {
     if (!selectedCompany) return;
 
@@ -83,7 +89,15 @@ const Admin = () => {
         console.error(`Error ${actionType === 'approve' ? 'approving' : 'rejecting'} company:`, error);
         toast.error(`Failed to ${actionType === 'approve' ? 'approve' : 'reject'} company. Please try again.`);
       } else {
-        toast.success(`Company ${actionType === 'approve' ? 'approved' : 'rejected'} successfully!`);
+        if (actionType === 'approve' && selectedCompany.tracking_id) {
+          const weloUrl = generateWeloPageUrl(selectedCompany.tracking_id);
+          toast.success(
+            `Company approved successfully! Welo page: ${weloUrl}`,
+            { duration: 10000 }
+          );
+        } else {
+          toast.success(`Company ${actionType === 'approve' ? 'approved' : 'rejected'} successfully!`);
+        }
         fetchCompanies(); // Refresh the company list
       }
     } finally {
@@ -135,6 +149,20 @@ const Admin = () => {
                     <Label className="text-xs font-medium text-gray-700">Registered</Label>
                     <p className="text-sm">{new Date(company.created_at).toLocaleDateString()}</p>
                   </div>
+                  {company.status === 'approved' && company.tracking_id && (
+                    <div>
+                      <Label className="text-xs font-medium text-green-700">Welo Page</Label>
+                      <a 
+                        href={generateWeloPageUrl(company.tracking_id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+                      >
+                        <span>{generateWeloPageUrl(company.tracking_id)}</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
                   {company.status === 'rejected' && company.rejection_reason && (
                     <div>
                       <Label className="text-xs font-medium text-red-700">Rejection Reason</Label>
@@ -147,9 +175,9 @@ const Admin = () => {
                   <div className="flex justify-end space-x-2 mt-4">
                     <Button 
                       size="sm"
-                      variant="ghost"
+                      variant="outline"
                       onClick={() => handleOpenConfirmation(company, 'reject')}
-                      className="bg-red-600 hover:bg-red-700 text-white"
+                      className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
                     >
                       Reject
                     </Button>
@@ -168,7 +196,7 @@ const Admin = () => {
         </div>
       )}
 
-      <AdminConfirmDialog
+      <AdminApprovalDialog
         open={confirmDialogOpen}
         onOpenChange={setConfirmDialogOpen}
         type={actionType}
