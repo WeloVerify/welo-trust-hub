@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,10 +20,10 @@ interface CompanyProfile {
   id: string;
   company_name: string;
   email: string;
-  website: string;
-  phone: string;
+  website_url: string;
+  phone_number: string | null;
   created_at: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'under_review' | 'approved' | 'rejected';
   rejection_reason: string | null;
 }
 
@@ -42,9 +43,8 @@ const Admin = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('companies')
         .select('*')
-        .eq('role', 'company')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -72,7 +72,7 @@ const Admin = () => {
       let newStatus: 'approved' | 'rejected' = actionType === 'approve' ? 'approved' : 'rejected';
 
       const { error } = await supabase
-        .from('profiles')
+        .from('companies')
         .update({ 
           status: newStatus,
           rejection_reason: reason || null
@@ -125,11 +125,11 @@ const Admin = () => {
                   </div>
                   <div>
                     <Label className="text-xs font-medium text-gray-700">Website</Label>
-                    <p className="text-sm flex items-center space-x-2"><Building2 className="h-4 w-4"/><span>{company.website}</span></p>
+                    <p className="text-sm flex items-center space-x-2"><Building2 className="h-4 w-4"/><span>{company.website_url}</span></p>
                   </div>
                   <div>
                     <Label className="text-xs font-medium text-gray-700">Phone</Label>
-                    <p className="text-sm">{company.phone}</p>
+                    <p className="text-sm">{company.phone_number || 'N/A'}</p>
                   </div>
                   <div>
                     <Label className="text-xs font-medium text-gray-700">Registered</Label>
