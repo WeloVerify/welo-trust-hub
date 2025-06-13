@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,98 +8,134 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, Eye, CheckCircle, XCircle, Clock, FileText, Image, ExternalLink } from 'lucide-react';
+import { Search, Eye, CheckCircle, XCircle, Clock, FileText, ExternalLink, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-interface PendingCompany {
+interface Company {
   id: string;
-  companyName: string;
+  company_name: string;
   email: string;
-  websiteUrl: string;
+  website_url: string;
   country: string;
-  dateOfIncorporation: string;
-  phoneNumber: string;
+  date_of_incorporation: string;
+  phone_number: string;
   description: string;
-  termsUrl: string;
-  privacyUrl: string;
-  submittedAt: string;
-  status: 'pending' | 'under_review';
-  documents: string[];
-  branding: {
-    logoUrl?: string;
-    coverUrl?: string;
-    primaryColor: string;
-    displayText: string;
-  };
+  terms_url: string;
+  privacy_url: string;
+  created_at: string;
+  status: 'pending' | 'under_review' | 'approved' | 'rejected';
+  tracking_id: string;
+  company_branding: Array<{
+    logo_url?: string;
+    cover_url?: string;
+    primary_color: string;
+    display_text?: string;
+  }>;
+  company_documents: Array<{
+    file_name: string;
+    file_url: string;
+    file_type: string;
+  }>;
 }
 
-const mockPendingCompanies: PendingCompany[] = [
-  {
-    id: '1',
-    companyName: 'TechCorp Solutions',
-    email: 'contact@techcorp.com',
-    websiteUrl: 'https://techcorp.com',
-    country: 'United States',
-    dateOfIncorporation: '2020-03-15',
-    phoneNumber: '+1 (555) 123-4567',
-    description: 'Leading software development company specializing in enterprise solutions.',
-    termsUrl: 'https://techcorp.com/terms',
-    privacyUrl: 'https://techcorp.com/privacy',
-    submittedAt: '2024-01-15T10:30:00Z',
-    status: 'pending',
-    documents: ['business-license.pdf', 'incorporation-cert.pdf'],
-    branding: {
-      logoUrl: '/placeholder.svg',
-      primaryColor: '#3b82f6',
-      displayText: 'Trusted enterprise software solutions since 2020'
-    }
-  },
-  {
-    id: '2',
-    companyName: 'GreenTech Innovations',
-    email: 'hello@greentech.io',
-    websiteUrl: 'https://greentech.io',
-    country: 'Canada',
-    dateOfIncorporation: '2019-08-22',
-    phoneNumber: '+1 (647) 555-9876',
-    description: 'Sustainable technology solutions for a better tomorrow.',
-    termsUrl: 'https://greentech.io/terms',
-    privacyUrl: 'https://greentech.io/privacy',
-    submittedAt: '2024-01-16T14:20:00Z',
-    status: 'under_review',
-    documents: ['business-registration.pdf'],
-    branding: {
-      primaryColor: '#10b981',
-      displayText: 'Leading the green technology revolution'
-    }
-  }
-];
-
 const Admin = () => {
-  const [companies, setCompanies] = useState<PendingCompany[]>(mockPendingCompanies);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCompany, setSelectedCompany] = useState<PendingCompany | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const { toast } = useToast();
+  const { signOut } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Fetch pending companies
+  const { data: companies = [], isLoading } = useQuery({
+    queryKey: ['pending-companies'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('companies')
+        .select(`
+          *,
+          company_branding(*),
+          company_documents(*)
+        `)
+        .in('status', ['pending', 'under_review'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Company[];
+    },
+  });
 
   const filteredCompanies = companies.filter(company =>
-    company.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    company.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     company.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleApprove = async (companyId: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setCompanies(prev => prev.filter(c => c.id !== companyId));
-    toast({
-      title: "Company Approved",
-      description: "The company has been successfully approved and moved to active clients.",
-    });
-    setSelectedCompany(null);
+  // Approve company mutation
+  const approveMutation = useMutation({
+    mutationFn: async (companyId: string) => {
+      const { error } = await supabase
+        .from('companies')
+        .update({ status: 'approved' })
+        .eq('id', companyId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-companies'] });
+      toast({
+        title: "Company Approved",
+        description: "The company has been successfully approved and moved to active clients.",
+      });
+      setSelectedCompany(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to approve company: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Reject company mutation
+  const rejectMutation = useMutation({
+    mutationFn: async ({ companyId, reason }: { companyId: string; reason: string }) => {
+      const { error } = await supabase
+        .from('companies')
+        .update({ 
+          status: 'rejected',
+          rejection_reason: reason 
+        })
+        .eq('id', companyId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-companies'] });
+      toast({
+        title: "Company Rejected",
+        description: "The company has been rejected and notified via email.",
+      });
+      setSelectedCompany(null);
+      setRejectionReason('');
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to reject company: " + error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleApprove = (companyId: string) => {
+    approveMutation.mutate(companyId);
   };
 
-  const handleReject = async (companyId: string, reason: string) => {
+  const handleReject = (companyId: string, reason: string) => {
     if (!reason.trim()) {
       toast({
         title: "Rejection Reason Required",
@@ -109,17 +145,20 @@ const Admin = () => {
       return;
     }
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setCompanies(prev => prev.filter(c => c.id !== companyId));
-    toast({
-      title: "Company Rejected",
-      description: "The company has been rejected and notified via email.",
-    });
-    setSelectedCompany(null);
-    setRejectionReason('');
+    rejectMutation.mutate({ companyId, reason });
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-32 bg-gray-200 rounded mb-6"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -129,9 +168,15 @@ const Admin = () => {
           <h1 className="text-3xl font-bold text-gray-900">Admin Panel</h1>
           <p className="text-gray-600 mt-1">Manage company verification requests</p>
         </div>
-        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-          {filteredCompanies.length} Pending Reviews
-        </Badge>
+        <div className="flex items-center space-x-3">
+          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+            {filteredCompanies.length} Pending Reviews
+          </Badge>
+          <Button variant="outline" onClick={signOut} size="sm">
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign Out
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -155,206 +200,229 @@ const Admin = () => {
           <CardTitle>Pending Verifications</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Company</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Country</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCompanies.map((company) => (
-                <TableRow key={company.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{company.companyName}</p>
-                      <p className="text-sm text-gray-500">{company.websiteUrl}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{company.email}</TableCell>
-                  <TableCell>{company.country}</TableCell>
-                  <TableCell>{new Date(company.submittedAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Badge variant={company.status === 'pending' ? 'secondary' : 'outline'}>
-                      <Clock className="h-3 w-3 mr-1" />
-                      {company.status === 'pending' ? 'Pending' : 'Under Review'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedCompany(company)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Review
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>Company Review: {company.companyName}</DialogTitle>
-                        </DialogHeader>
-                        
-                        {selectedCompany && (
-                          <div className="space-y-6">
-                            {/* Company Details */}
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-lg">Company Information</CardTitle>
-                              </CardHeader>
-                              <CardContent className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label className="text-sm font-medium text-gray-700">Company Name</Label>
-                                  <p>{selectedCompany.companyName}</p>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium text-gray-700">Email</Label>
-                                  <p>{selectedCompany.email}</p>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium text-gray-700">Website</Label>
-                                  <a href={selectedCompany.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center">
-                                    {selectedCompany.websiteUrl}
-                                    <ExternalLink className="h-3 w-3 ml-1" />
-                                  </a>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium text-gray-700">Phone</Label>
-                                  <p>{selectedCompany.phoneNumber}</p>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium text-gray-700">Country</Label>
-                                  <p>{selectedCompany.country}</p>
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-medium text-gray-700">Incorporated</Label>
-                                  <p>{new Date(selectedCompany.dateOfIncorporation).toLocaleDateString()}</p>
-                                </div>
-                                <div className="col-span-2">
-                                  <Label className="text-sm font-medium text-gray-700">Description</Label>
-                                  <p>{selectedCompany.description}</p>
-                                </div>
-                              </CardContent>
-                            </Card>
-
-                            {/* Legal Links */}
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-lg">Legal Pages</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-2">
-                                {selectedCompany.termsUrl && (
-                                  <a href={selectedCompany.termsUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center">
-                                    Terms of Service <ExternalLink className="h-3 w-3 ml-1" />
-                                  </a>
-                                )}
-                                {selectedCompany.privacyUrl && (
-                                  <a href={selectedCompany.privacyUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center">
-                                    Privacy Policy <ExternalLink className="h-3 w-3 ml-1" />
-                                  </a>
-                                )}
-                              </CardContent>
-                            </Card>
-
-                            {/* Documents */}
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-lg">Uploaded Documents</CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <div className="space-y-2">
-                                  {selectedCompany.documents.map((doc, index) => (
-                                    <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-                                      <FileText className="h-4 w-4 text-gray-500" />
-                                      <span className="text-sm">{doc}</span>
-                                      <Button variant="ghost" size="sm">Download</Button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </CardContent>
-                            </Card>
-
-                            {/* Branding Preview */}
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-lg">Branding Setup</CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <div className="text-center space-y-4">
-                                  {selectedCompany.branding.logoUrl && (
-                                    <img src={selectedCompany.branding.logoUrl} alt="Logo" className="h-16 mx-auto" />
-                                  )}
-                                  <div 
-                                    className="h-32 rounded-lg flex items-center justify-center text-white"
-                                    style={{ backgroundColor: selectedCompany.branding.primaryColor }}
-                                  >
-                                    <span>Welo Page Preview</span>
-                                  </div>
-                                  {selectedCompany.branding.displayText && (
-                                    <p className="text-gray-700">{selectedCompany.branding.displayText}</p>
-                                  )}
-                                </div>
-                              </CardContent>
-                            </Card>
-
-                            {/* Actions */}
-                            <div className="flex space-x-4">
-                              <Button 
-                                onClick={() => handleApprove(selectedCompany.id)}
-                                className="flex-1 bg-green-600 hover:bg-green-700"
-                              >
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Approve Company
-                              </Button>
-                              
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button variant="destructive" className="flex-1">
-                                    <XCircle className="h-4 w-4 mr-2" />
-                                    Reject Company
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                  <DialogHeader>
-                                    <DialogTitle>Reject Company</DialogTitle>
-                                  </DialogHeader>
-                                  <div className="space-y-4">
-                                    <p>Please provide a reason for rejecting this application:</p>
-                                    <Textarea
-                                      value={rejectionReason}
-                                      onChange={(e) => setRejectionReason(e.target.value)}
-                                      placeholder="Enter rejection reason..."
-                                      rows={4}
-                                    />
-                                    <div className="flex space-x-2">
-                                      <Button
-                                        variant="destructive"
-                                        onClick={() => handleReject(selectedCompany.id, rejectionReason)}
-                                        disabled={!rejectionReason.trim()}
-                                      >
-                                        Confirm Rejection
-                                      </Button>
-                                      <Button variant="outline">Cancel</Button>
-                                    </div>
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
-                            </div>
-                          </div>
-                        )}
-                      </DialogContent>
-                    </Dialog>
-                  </TableCell>
+          {filteredCompanies.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No pending companies found
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Country</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredCompanies.map((company) => (
+                  <TableRow key={company.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{company.company_name}</p>
+                        <p className="text-sm text-gray-500">{company.website_url}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>{company.email}</TableCell>
+                    <TableCell>{company.country}</TableCell>
+                    <TableCell>{new Date(company.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Badge variant={company.status === 'pending' ? 'secondary' : 'outline'}>
+                        <Clock className="h-3 w-3 mr-1" />
+                        {company.status === 'pending' ? 'Pending' : 'Under Review'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedCompany(company)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Review
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>Company Review: {selectedCompany?.company_name}</DialogTitle>
+                          </DialogHeader>
+                          
+                          {selectedCompany && (
+                            <div className="space-y-6">
+                              {/* Company Details */}
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="text-lg">Company Information</CardTitle>
+                                </CardHeader>
+                                <CardContent className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label className="text-sm font-medium text-gray-700">Company Name</Label>
+                                    <p>{selectedCompany.company_name}</p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium text-gray-700">Email</Label>
+                                    <p>{selectedCompany.email}</p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium text-gray-700">Website</Label>
+                                    <a href={selectedCompany.website_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center">
+                                      {selectedCompany.website_url}
+                                      <ExternalLink className="h-3 w-3 ml-1" />
+                                    </a>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium text-gray-700">Phone</Label>
+                                    <p>{selectedCompany.phone_number || 'Not provided'}</p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium text-gray-700">Country</Label>
+                                    <p>{selectedCompany.country}</p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium text-gray-700">Tracking ID</Label>
+                                    <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{selectedCompany.tracking_id}</p>
+                                  </div>
+                                  {selectedCompany.date_of_incorporation && (
+                                    <div>
+                                      <Label className="text-sm font-medium text-gray-700">Incorporated</Label>
+                                      <p>{new Date(selectedCompany.date_of_incorporation).toLocaleDateString()}</p>
+                                    </div>
+                                  )}
+                                  {selectedCompany.description && (
+                                    <div className="col-span-2">
+                                      <Label className="text-sm font-medium text-gray-700">Description</Label>
+                                      <p>{selectedCompany.description}</p>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+
+                              {/* Legal Links */}
+                              {(selectedCompany.terms_url || selectedCompany.privacy_url) && (
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle className="text-lg">Legal Pages</CardTitle>
+                                  </CardHeader>
+                                  <CardContent className="space-y-2">
+                                    {selectedCompany.terms_url && (
+                                      <a href={selectedCompany.terms_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center">
+                                        Terms of Service <ExternalLink className="h-3 w-3 ml-1" />
+                                      </a>
+                                    )}
+                                    {selectedCompany.privacy_url && (
+                                      <a href={selectedCompany.privacy_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center">
+                                        Privacy Policy <ExternalLink className="h-3 w-3 ml-1" />
+                                      </a>
+                                    )}
+                                  </CardContent>
+                                </Card>
+                              )}
+
+                              {/* Documents */}
+                              {selectedCompany.company_documents.length > 0 && (
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle className="text-lg">Uploaded Documents</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="space-y-2">
+                                      {selectedCompany.company_documents.map((doc, index) => (
+                                        <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                                          <FileText className="h-4 w-4 text-gray-500" />
+                                          <span className="text-sm">{doc.file_name}</span>
+                                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                                            <Button variant="ghost" size="sm">View</Button>
+                                          </a>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              )}
+
+                              {/* Branding Preview */}
+                              {selectedCompany.company_branding.length > 0 && (
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle className="text-lg">Branding Setup</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="text-center space-y-4">
+                                      {selectedCompany.company_branding[0]?.logo_url && (
+                                        <img src={selectedCompany.company_branding[0].logo_url} alt="Logo" className="h-16 mx-auto" />
+                                      )}
+                                      <div 
+                                        className="h-32 rounded-lg flex items-center justify-center text-white"
+                                        style={{ backgroundColor: selectedCompany.company_branding[0]?.primary_color || '#3b82f6' }}
+                                      >
+                                        <span>Welo Page Preview</span>
+                                      </div>
+                                      {selectedCompany.company_branding[0]?.display_text && (
+                                        <p className="text-gray-700">{selectedCompany.company_branding[0].display_text}</p>
+                                      )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              )}
+
+                              {/* Actions */}
+                              <div className="flex space-x-4">
+                                <Button 
+                                  onClick={() => handleApprove(selectedCompany.id)}
+                                  className="flex-1 bg-green-600 hover:bg-green-700"
+                                  disabled={approveMutation.isPending}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  {approveMutation.isPending ? 'Approving...' : 'Approve Company'}
+                                </Button>
+                                
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button variant="destructive" className="flex-1">
+                                      <XCircle className="h-4 w-4 mr-2" />
+                                      Reject Company
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>Reject Company</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4">
+                                      <p>Please provide a reason for rejecting this application:</p>
+                                      <Textarea
+                                        value={rejectionReason}
+                                        onChange={(e) => setRejectionReason(e.target.value)}
+                                        placeholder="Enter rejection reason..."
+                                        rows={4}
+                                      />
+                                      <div className="flex space-x-2">
+                                        <Button
+                                          variant="destructive"
+                                          onClick={() => handleReject(selectedCompany.id, rejectionReason)}
+                                          disabled={!rejectionReason.trim() || rejectMutation.isPending}
+                                        >
+                                          {rejectMutation.isPending ? 'Rejecting...' : 'Confirm Rejection'}
+                                        </Button>
+                                        <Button variant="outline">Cancel</Button>
+                                      </div>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              </div>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
