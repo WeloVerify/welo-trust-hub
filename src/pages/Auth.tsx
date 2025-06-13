@@ -30,11 +30,17 @@ const Auth = () => {
 
     try {
       if (isLogin) {
+        console.log('Attempting login for:', email);
         const { error } = await signIn(email, password);
-        if (!error) {
+        if (error) {
+          console.error('Login error:', error);
+          toast.error(error.message || 'Login failed. Please try again.');
+        } else {
+          toast.success('Welcome back!');
           navigate('/');
         }
       } else {
+        // Validation for signup
         if (password !== confirmPassword) {
           toast.error('Passwords do not match');
           setLoading(false);
@@ -45,8 +51,18 @@ const Auth = () => {
           setLoading(false);
           return;
         }
+        
+        console.log('Attempting signup for:', email);
         const { error } = await signUp(email, password);
-        if (!error) {
+        if (error) {
+          console.error('Signup error:', error);
+          // Handle specific database errors
+          if (error.message.includes('Database error saving new user')) {
+            toast.error('Registration temporarily unavailable. Please contact support or try again later.');
+          } else {
+            toast.error(error.message || 'Registration failed. Please try again.');
+          }
+        } else {
           toast.success('Registration successful! Please check your email to verify your account.');
         }
       }
