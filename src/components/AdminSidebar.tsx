@@ -3,90 +3,74 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
-  LayoutDashboard, 
-  BarChart3, 
-  Bell, 
   Users, 
-  MessageCircle,
+  BarChart3, 
+  TrendingUp, 
+  Bell, 
+  UserPlus, 
+  MessageSquare, 
   Settings,
-  Shield,
   LogOut
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import LogoHeader from './LogoHeader';
 
 const AdminSidebar = () => {
   const location = useLocation();
   const { signOut } = useAuth();
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
-    { icon: BarChart3, label: 'Global Analytics', href: '/admin/global-analytics' },
-    { icon: Bell, label: 'Updates', href: '/admin/updates' },
-    { icon: Users, label: 'Affiliates', href: '/admin/affiliates' },
-    { icon: MessageCircle, label: 'Chat', href: '/admin/chat' },
-    { icon: Settings, label: 'Settings', href: '/admin/settings' },
+    { icon: Users, label: 'Aziende', href: '/admin' },
+    { icon: TrendingUp, label: 'Analytics Globali', href: '/admin/global-analytics' },
+    { icon: Bell, label: 'Aggiornamenti', href: '/admin/updates' },
+    { icon: UserPlus, label: 'Affiliati', href: '/admin/affiliates' },
+    { icon: MessageSquare, label: 'Chat', href: '/admin/chat' },
+    { icon: Settings, label: 'Impostazioni', href: '/admin/settings' },
   ];
 
-  const handleLogout = () => {
-    signOut();
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   return (
-    <div className="flex h-screen w-64 flex-col bg-white border-r border-gray-200">
-      {/* Logo */}
-      <div className="flex h-16 items-center px-6 border-b border-gray-200">
-        <div className="flex items-center space-x-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center">
-            <Shield className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-xl font-bold text-gray-900">Welo Admin</span>
+    <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen">
+      <div className="p-6 border-b border-gray-200">
+        <LogoHeader />
+        <div className="mt-2">
+          <span className="text-sm text-gray-500">Pannello Admin</span>
         </div>
       </div>
-
-      {/* Role Badge */}
-      <div className="px-6 py-4">
-        <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-          Admin Panel
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 px-4 space-y-1">
+      
+      <nav className="flex-1 p-4 space-y-2">
         {navItems.map((item) => {
+          const Icon = item.icon;
           const isActive = location.pathname === item.href;
+          
           return (
             <Link
               key={item.href}
               to={item.href}
               className={cn(
-                "flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200",
+                'flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                 isActive
-                  ? "bg-purple-50 text-purple-700 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               )}
             >
-              <item.icon className="h-5 w-5 mr-3" />
-              {item.label}
+              <Icon className="w-5 h-5" />
+              <span>{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      {/* User Section */}
-      <div className="px-4 py-4 border-t border-gray-200">
-        <div className="flex items-center space-x-3 mb-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-200 to-purple-300"></div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">Admin User</p>
-            <p className="text-xs text-gray-500 truncate">admin@welo.com</p>
-          </div>
-        </div>
+      <div className="p-4 border-t border-gray-200">
         <button
-          onClick={handleLogout}
-          className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all duration-200"
+          onClick={handleSignOut}
+          className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 w-full transition-colors"
         >
-          <LogOut className="h-4 w-4 mr-3" />
-          Logout
+          <LogOut className="w-5 h-5" />
+          <span>Logout</span>
         </button>
       </div>
     </div>

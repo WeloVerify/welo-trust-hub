@@ -9,137 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      admin_notifications: {
-        Row: {
-          admin_id: string
-          company_id: string
-          created_at: string
-          id: string
-          message: string
-          read: boolean
-        }
-        Insert: {
-          admin_id: string
-          company_id: string
-          created_at?: string
-          id?: string
-          message: string
-          read?: boolean
-        }
-        Update: {
-          admin_id?: string
-          company_id?: string
-          created_at?: string
-          id?: string
-          message?: string
-          read?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "admin_notifications_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      admin_settings: {
-        Row: {
-          created_at: string | null
-          id: string
-          setting_key: string
-          setting_value: Json | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          setting_key: string
-          setting_value?: Json | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          setting_key?: string
-          setting_value?: Json | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      companies: {
-        Row: {
-          company_name: string
-          country: string
-          created_at: string
-          date_of_incorporation: string | null
-          description: string | null
-          email: string
-          id: string
-          last_tracking_event: string | null
-          phone_number: string | null
-          plan_type: string | null
-          privacy_url: string | null
-          rejection_reason: string | null
-          script_installed: boolean | null
-          script_verification_status: string | null
-          status: Database["public"]["Enums"]["company_status"]
-          terms_url: string | null
-          tracking_id: string | null
-          updated_at: string
-          user_id: string
-          views_count: number | null
-          website_url: string
-        }
-        Insert: {
-          company_name: string
-          country: string
-          created_at?: string
-          date_of_incorporation?: string | null
-          description?: string | null
-          email: string
-          id?: string
-          last_tracking_event?: string | null
-          phone_number?: string | null
-          plan_type?: string | null
-          privacy_url?: string | null
-          rejection_reason?: string | null
-          script_installed?: boolean | null
-          script_verification_status?: string | null
-          status?: Database["public"]["Enums"]["company_status"]
-          terms_url?: string | null
-          tracking_id?: string | null
-          updated_at?: string
-          user_id: string
-          views_count?: number | null
-          website_url: string
-        }
-        Update: {
-          company_name?: string
-          country?: string
-          created_at?: string
-          date_of_incorporation?: string | null
-          description?: string | null
-          email?: string
-          id?: string
-          last_tracking_event?: string | null
-          phone_number?: string | null
-          plan_type?: string | null
-          privacy_url?: string | null
-          rejection_reason?: string | null
-          script_installed?: boolean | null
-          script_verification_status?: string | null
-          status?: Database["public"]["Enums"]["company_status"]
-          terms_url?: string | null
-          tracking_id?: string | null
-          updated_at?: string
-          user_id?: string
-          views_count?: number | null
-          website_url?: string
-        }
-        Relationships: []
-      }
       company_branding: {
         Row: {
           company_id: string
@@ -171,15 +40,7 @@ export type Database = {
           primary_color?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "company_branding_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       company_documents: {
         Row: {
@@ -206,15 +67,7 @@ export type Database = {
           file_url?: string
           id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "company_documents_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       company_subscriptions: {
         Row: {
@@ -245,13 +98,6 @@ export type Database = {
           started_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "company_subscriptions_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "company_subscriptions_plan_id_fkey"
             columns: ["plan_id"]
@@ -358,15 +204,7 @@ export type Database = {
           referrer?: string | null
           user_agent?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "tracking_events_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       tracking_script_events: {
         Row: {
@@ -402,15 +240,7 @@ export type Database = {
           referrer?: string | null
           user_agent?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "tracking_script_events_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +24,8 @@ import Dashboard from "./pages/Dashboard";
 import Widgets from "./pages/Widgets";
 import Verification from "./pages/Verification";
 import Statistics from "./pages/Statistics";
+import Billing from "./pages/Billing";
+import Settings from "./pages/Settings";
 
 // Shared pages
 import Auth from "./pages/Auth";
@@ -30,7 +33,14 @@ import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import RedirectByRole from "./pages/RedirectByRole";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -108,6 +118,8 @@ const App = () => (
                       <Route path="widgets" element={<Widgets />} />
                       <Route path="verification" element={<Verification />} />
                       <Route path="statistics" element={<Statistics />} />
+                      <Route path="billing" element={<Billing />} />
+                      <Route path="settings" element={<Settings />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </main>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,47 +24,68 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Get initial session
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        await fetchUserRole(session.user);
+      }
+      setLoading(false);
+    };
+
+    getInitialSession();
+
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // ✅ Hardcoded admin logic
-          if (session.user.email === "danielltaddei@gmail.com") {
-            setUserRole("admin");
-          } else {
-            // Optional: fallback per altri ruoli
-            try {
-              const { data: profile } = await supabase
-                .from("profiles")
-                .select("role")
-                .eq("id", session.user.id)
-                .single();
-
-              setUserRole(profile?.role ?? "company");
-            } catch (error) {
-              console.error("Error fetching user role:", error);
-              setUserRole("company");
-            }
-          }
+          await fetchUserRole(session.user);
         } else {
           setUserRole(null);
         }
-
-        setLoading(false);
+        
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          setLoading(false);
+        }
       }
     );
 
-    // Recupera sessione attiva se presente
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (!session) setLoading(false);
-    });
-
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserRole = async (user: User) => {
+    try {
+      // Hardcoded admin logic
+      if (user.email === "danielltaddei@gmail.com") {
+        setUserRole("admin");
+        return;
+      }
+
+      // Fetch role from profiles table
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching user role:", error);
+        setUserRole("company");
+        return;
+      }
+
+      setUserRole(profile?.role ?? "company");
+    } catch (error) {
+      console.error("Error in fetchUserRole:", error);
+      setUserRole("company");
+    }
+  };
 
   const signUp = async (
     email: string,
@@ -82,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Registration successful! Please check your email to verify your account.');
+      toast.success('Registrazione completata! Controlla la tua email per verificare l\'account.');
     }
 
     return { error };
@@ -97,7 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Welcome back!');
+      toast.success('Bentornato!');
     }
 
     return { error };
@@ -114,7 +136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Redirecting to Google login...');
+      toast.success('Reindirizzamento a Google...');
     }
   };
 
@@ -123,7 +145,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Signed out successfully');
+      toast.success('Disconnesso con successo');
+      // Clear all state
+      setUser(null);
+      setSession(null);
+      setUserRole(null);
     }
   };
 
